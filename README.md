@@ -1,5 +1,7 @@
 Aplicación móvil desarrollada en React Native v0.66
 
+## EN LA RAÍZ DEL PROYECTO SE ENCUENTRA ARCHIVO "app-debug.apk" que corresponde a la aplicación para instalar en su dispositivo.
+
 # Requisitos
 * NodeJS 16+
 * React Native Doc: https://reactnative.dev/docs/0.66/getting-started
