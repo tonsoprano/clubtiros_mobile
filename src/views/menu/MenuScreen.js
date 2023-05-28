@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, ImageBackground } from 'react-nati
 
 import styles from './styles';
 import globalStyles from '../global';
+import Header from '../components/Header';
 
 export default function MenuScreen({ navigation }){
 
@@ -40,6 +41,9 @@ export default function MenuScreen({ navigation }){
 
     return (
         <ImageBackground source={require('../../assets/img/bg-main.jpg')} style={globalStyles.bgMain} imageStyle={{opacity: .2}}>
+            <View>
+                <Header navigation={navigation} />
+            </View>
             {renderTitle()}
             {renderButtons()}
         </ImageBackground>

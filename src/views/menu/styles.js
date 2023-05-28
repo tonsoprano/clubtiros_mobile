@@ -2,7 +2,7 @@ import { ScaledSheet } from 'react-native-size-matters';
 
 export default ScaledSheet.create({
     titleContainer: {
-        marginTop: '20%'
+        marginTop: '5%'
     },
     title: {
         color: '#fff',

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Alert, View, Text, TouchableOpacity, ImageBackground, Switch } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import DropDownPicker from 'react-native-dropdown-picker';
 import moment from 'moment-timezone';
 
 import styles from './styles';
 import globalStyles from '../global';
+import Header from '../components/Header';
+import { API_KEY, API_URL } from '../../config/constants';
 
 export default function BookingScreen({ navigation, route }){
 
@@ -20,6 +23,7 @@ export default function BookingScreen({ navigation, route }){
     const [showLines, setShowLines] = useState(false);
     const [automated, setAutomated] = useState(false);
     const [line, setLine] = useState(null);
+    const [lineText, setLineText] = useState(null);
     const [lines, setLines] = useState([
         { label: 'Línea 1', value: 1, key: 1 },
         { label: 'Línea 2', value: 2, key: 2 },
@@ -29,22 +33,83 @@ export default function BookingScreen({ navigation, route }){
     ]);
 
     const sendBooking = () => {
-        // navigation.navigate('Review');
         let automatedText = automated ? 'Si' : 'No';
+        let lineText = lines.find(l => l.value === line);
+        if(line === null){
+            Alert.alert(
+                'Error en formulario',
+                'Debe seleccionar una línea', [
+                    {
+                        text: 'Cerrar',
+                        style: 'cancel'
+                    },
+                ],
+            );
+            return;
+        }
         Alert.alert(
             'Reserva',
-            `- ${moment(date).format('DD/MM/YYYY')}\n- ${moment(timeFrom).format('HH:mm')}\n- ${moment(timeTo).format('HH:mm')}\n- ${line}\n- ${automatedText}`, [
+            `- Fecha: ${moment(date).format('DD/MM/YYYY')}\n- Desde: ${moment(timeFrom).format('HH:mm')}\n- Hasta: ${moment(timeTo).format('HH:mm')}\n- Línea: ${lineText.label}\n- Automatizado: ${automatedText}`, [
                 {
-                    text: 'Cerrar',
+                    text: 'Cancelar',
                     style: 'cancel'
                 },
                 {
                     text: 'Confirmar',
                     style: 'default',
-                    onPress: () => navigation.navigate('Review')
+                    onPress: booking
                 },
             ],
         );
+    }
+
+    const booking = async () => {
+        const user = JSON.parse(await AsyncStorage.getItem('@user_data'));
+        let lineType = route.params.type === 'large' ? 1 : 2;
+        const req = await fetch(`${API_URL}/app/requestBooking`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': API_KEY
+            },
+            body: JSON.stringify({
+                userId: user.userId,
+                lineType: lineType,
+                lineId: line,
+                date: moment(date).format('YYYY-MM-DD'),
+                timeStart: moment(timeFrom).format('HH:mm'),
+                timeEnd: moment(timeTo).format('HH:mm'),
+                automatizated: automated,
+            })
+        });
+        const data = await req.json();
+        console.log(data);
+        if(!data.ok && data.status === 3){
+            Alert.alert(
+                'Error en reserva',
+                'Hubo un error interno en el servidor. Intente nuevamente', [
+                    {
+                        text: 'Cerrar',
+                        style: 'cancel'
+                    },
+                ],
+            );
+            return;
+        }
+        if(!data.ok && data.status === 2){
+            Alert.alert(
+                'Error en reserva',
+                'Ya existe una reserva en ese horario. Intente con otro.', [
+                    {
+                        text: 'Cerrar',
+                        style: 'cancel'
+                    },
+                ],
+            );
+            return;
+        }
+
+        navigation.navigate('Review');
     }
 
     const onChangeDate = (event, selectedDate) => {
@@ -167,22 +232,27 @@ export default function BookingScreen({ navigation, route }){
                         <Text style={styles.textButton}>Aceptar</Text>
                     </TouchableOpacity>
                 </View>
-                <View style={[styles.formGroup, {marginTop: -115}]}>
-                    <Text style={styles.labelForm}>Automatizado</Text>
-                    <Switch
-                        trackColor={{ false: "#767577", true: "#223bc9" }}
-                        thumbColor={"#f4f3f4"}
-                        onValueChange={toggleTimeSwitch}
-                        value={automated}
-                        style={{alignSelf: 'flex-start'}}
-                    />
-                </View>
+                {route.params.type === 'short' && (
+                    <View style={[styles.formGroup, {marginTop: -115}]}>
+                        <Text style={styles.labelForm}>Automatizado</Text>
+                        <Switch
+                            trackColor={{ false: "#767577", true: "#223bc9" }}
+                            thumbColor={"#f4f3f4"}
+                            onValueChange={toggleTimeSwitch}
+                            value={automated}
+                            style={{alignSelf: 'flex-start'}}
+                        />
+                    </View>
+                )}
             </View>
         )
     }
 
     return (
         <ImageBackground source={require('../../assets/img/bg-main.jpg')} style={globalStyles.bgMain} imageStyle={{opacity: .2}}>
+            <View>
+                <Header navigation={navigation} />
+            </View>
             {renderTitle()}
             {renderForm()}
         </ImageBackground>
